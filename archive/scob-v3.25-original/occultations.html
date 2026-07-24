@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lunar Occultations — SCOB</title>
+<meta name="description" content="Upcoming lunar occultations and close approaches — when the Moon passes in front of, or very near, a bright star or planet as seen from the Science Centre Observatory, Singapore.">
+<style>
+:root{color-scheme:dark;--navy:#0b1733;--navy2:#13224a;--navy3:#1a2b56;--gold:#f5c542;--cyan:#5bd6e0;--white:#f4f6fb;--mute:#9fb0d6;--line:#33406b;--green:#5fd38a;}
+*{box-sizing:border-box;margin:0;}
+body{background:var(--navy);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 42px;}
+header{padding:18px 0 6px;}
+h1{font-size:22px;margin:0;color:var(--gold);}
+.loc{font-size:12.5px;color:var(--mute);margin-top:3px;}
+.bar{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;}
+.bar a{color:var(--cyan);font-weight:700;font-size:12.5px;border:1px solid var(--cyan);border-radius:9px;padding:7px 12px;text-decoration:none;}
+.intro{font-size:13.5px;color:var(--mute);margin:12px 0;}
+.ev{background:var(--navy2);border:1px solid var(--line);border-radius:13px;padding:12px 14px;margin:10px 0;display:flex;gap:12px;align-items:flex-start;}
+.ev.vis{border-color:var(--green);background:rgba(95,211,138,.08);}
+.ev .dt{flex:0 0 auto;width:74px;text-align:center;}
+.ev .dt .d{font-size:20px;font-weight:800;color:var(--gold);}.ev .dt .mo{font-size:12px;color:var(--mute);text-transform:uppercase;}
+.ev .nm{font-size:16px;font-weight:700;}
+.ev .what{font-size:13px;margin-top:2px;}
+.ev .vt{color:var(--green);font-weight:700;}
+.ev .sub{font-size:12px;color:var(--mute);margin-top:3px;}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 7px;margin-left:6px;}
+.tag.occ{background:rgba(245,197,66,.2);color:var(--gold);}.tag.near{background:var(--navy);color:var(--mute);border:1px solid var(--line);}
+.foot{margin-top:24px;font-size:11.5px;color:var(--mute);border-top:1px solid var(--line);padding-top:14px;line-height:1.6;}
+.foot a{color:var(--cyan);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🌘 Lunar Occultations &amp; Close Passes</h1>
+    <div class="loc">When the Moon slides in front of — or right past — a bright star or planet, seen from Jurong. Science Centre Observatory.</div>
+    <div class="bar"><a href="scob-dashboard-v3.html">← Dashboard</a><a href="almanac.html">📅 Almanac</a><a href="moon-tonight.html">🌕 Moon tonight</a><button id="filt" style="background:none;border:1px solid var(--cyan);color:var(--cyan);border-radius:9px;padding:7px 12px;font-weight:700;font-size:12.5px;cursor:pointer">👁 Visible only</button></div>
+  </header>
+  <div class="intro">An <b>occultation</b> is when the Moon covers a star or planet — the object blinks out at the Moon's edge, then reappears. A <b>close pass</b> is a near-miss that's still a lovely sight. Times are Singapore time (SGT). Whether an event is visible depends on the Moon being above the horizon here — many happen in daylight or with the Moon down.</div>
+  <div id="list"></div>
+  <div class="foot">
+    Computed on your device from the Moon's <b>topocentric</b> position for the Science Centre Observatory (parallax-corrected — essential for occultations), scanning bright zodiac stars (Aldebaran, Regulus, Spica, Antares) and the planets. Times are approximate (±a few minutes) — check a dedicated occultation service (e.g. Lunar Occultation Workbench / IOTA) before timing one precisely.<br><span class="scob-version" style="opacity:.75"></span>
+  </div>
+</div>
+<script src="astro-core.js"></script>
+<script>
+"use strict";
+var A=window.Astro;
+var MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var hideInv=(function(){try{var v=localStorage.getItem('scobOccHide');return v===null?true:v==='1';}catch(e){return true;}})();
+function fLabel(){var b=document.getElementById('filt');if(b)b.textContent=hideInv?'👁 Visible only':'👁 Showing all';}
+function evHTML(r){var e=r.e,sgt=new Date(e.t+8*3600000);
+  var when=(sgt.getUTCHours()%12||12)+':'+String(sgt.getUTCMinutes()).padStart(2,'0')+(sgt.getUTCHours()<12?'am':'pm');
+  var what=e.occult?('<b>Occultation</b> of '+e.name+'<span class="tag occ">covered</span>'):('Close pass — '+e.sep.toFixed(1)+'° from '+e.name+'<span class="tag near">near miss</span>');
+  var visline;
+  if(!r.moonUp)visline='Moon is below the horizon here — not visible from Singapore.';
+  else if(r.observable)visline='<span class="vt">✔ '+(r.vis?'Visible from Singapore':'Above the horizon')+'</span> — Moon '+Math.round(e.alt)+'° up in the '+A.compass(e.az)+', '+(r.night?'dark sky':'twilight')+'.';
+  else visline='Moon '+Math.round(e.alt)+'° up, but in daylight — hard to catch.';
+  return '<div class="ev'+(r.observable?' vis':'')+'"><div class="dt"><div class="d">'+sgt.getUTCDate()+'</div><div class="mo">'+MO[sgt.getUTCMonth()]+'</div></div>'+
+    '<div><div class="nm">'+e.name+(e.mag!=null?' <span class="sub" style="display:inline">· mag '+(e.mag>=0?'+':'')+e.mag+'</span>':'')+'</div>'+
+    '<div class="what">'+what+'</div>'+
+    '<div class="sub">'+when+' SGT · '+visline+'</div></div></div>';
+}
+function run(){
+  var host=document.getElementById('list');
+  var rows=A.occultations(new Date(),150).map(function(e){var su=A.sunAltAt(new Date(e.t)),moonUp=e.alt>2,twi=su<0,night=su<-6;
+    return {e:e,moonUp:moonUp,twi:twi,night:night,vis:e.occult&&moonUp&&twi,observable:moonUp&&twi};});
+  if(!rows.length){host.innerHTML='<div class="intro">No close Moon–star/planet approaches found in the next few months.</div>';return;}
+  var shown=hideInv?rows.filter(function(r){return r.observable;}):rows, hidden=rows.length-shown.length, note;
+  if(hideInv){
+    note=shown.length
+      ?'<div class="intro">Showing the <b>'+shown.length+'</b> event'+(shown.length===1?'':'s')+' observable from Singapore (Moon above the horizon, in twilight or darkness).'+(hidden?' <a href="#" id="showall" style="color:var(--cyan)">Show all '+rows.length+' (incl. Moon-down / daytime)</a>.':'')+'</div>'
+      :'<div class="intro">None of the next five months’ events are observable from Singapore — they all fall with the Moon below the horizon or in daylight. <a href="#" id="showall" style="color:var(--cyan)">Show all '+rows.length+' anyway</a>.</div>';
+  } else note='<div class="intro">Showing <b>all '+rows.length+'</b> close approaches, including those with the Moon down or in daylight here. <a href="#" id="showvis" style="color:var(--cyan)">Visible-only</a>.</div>';
+  host.innerHTML=note+shown.map(evHTML).join('');
+  var sa=document.getElementById('showall');if(sa)sa.onclick=function(ev){ev.preventDefault();setHide(false);};
+  var sv=document.getElementById('showvis');if(sv)sv.onclick=function(ev){ev.preventDefault();setHide(true);};
+}
+function setHide(v){hideInv=v;try{localStorage.setItem('scobOccHide',v?'1':'0');}catch(e){}fLabel();run();}
+document.getElementById('filt').onclick=function(){setHide(!hideInv);};
+fLabel();run();
+</script>
+<script src="version.js"></script>
+</body>
+</html>

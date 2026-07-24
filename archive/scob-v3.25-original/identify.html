@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>What Am I Looking At? — SCOB</title>
+<meta name="description" content="Point your phone at the sky and this page names the brightest object in that direction — planets, bright stars, clusters and more — computed live for the Science Centre Observatory.">
+<style>
+:root{color-scheme:dark;--navy:#0b1733;--navy2:#13224a;--navy3:#1a2b56;--gold:#f5c542;--cyan:#5bd6e0;--white:#f4f6fb;--mute:#9fb0d6;--line:#33406b;--green:#5fd38a;}
+*{box-sizing:border-box;margin:0;}
+body{background:var(--navy);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px 42px;}
+header{padding:18px 0 6px;}
+h1{font-size:22px;margin:0;color:var(--gold);}
+.loc{font-size:12.5px;color:var(--mute);margin-top:3px;}
+.bar{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.bar a{color:var(--cyan);font-weight:700;font-size:12.5px;border:1px solid var(--cyan);border-radius:9px;padding:7px 12px;text-decoration:none;}
+#enable{background:var(--gold);color:#0b1733;border:none;border-radius:9px;padding:9px 15px;font-size:14px;font-weight:800;cursor:pointer;}
+.status{font-size:12.5px;color:var(--mute);margin:12px 0;}
+.hit{background:var(--navy2);border:1px solid var(--line);border-radius:16px;padding:18px;margin:12px 0;display:flex;gap:16px;align-items:center;}
+.hit .ic{flex:0 0 auto;width:78px;height:78px;border-radius:12px;background:rgba(6,10,26,.6);}
+.hit .ic svg{width:78px;height:78px;display:block;}
+.hit .lead{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--mute);}
+.hit .nm{font-size:24px;font-weight:800;line-height:1.1;margin:2px 0;}
+.hit .sub{font-size:13px;color:var(--cyan);font-weight:700;}
+.hit .sep{font-size:12.5px;color:var(--mute);margin-top:3px;}
+.blurb{font-size:14px;margin:4px 0 10px;color:#dfe6f5;}
+.diag{font-size:12px;color:var(--mute);margin:8px 2px;}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--mute);margin:16px 0 6px;}
+.near{display:flex;flex-direction:column;gap:8px;}
+.near .row{display:flex;gap:11px;align-items:center;background:var(--navy3);border:1px solid var(--line);border-radius:11px;padding:9px 11px;}
+.near .row .ic2{width:38px;height:38px;flex:0 0 auto;border-radius:8px;background:rgba(6,10,26,.55);}
+.near .row .ic2 svg{width:38px;height:38px;display:block;}
+.near .nm2{font-weight:700;font-size:14px;}.near .sub2{font-size:12px;color:var(--mute);}
+.foot{margin-top:24px;font-size:11.5px;color:var(--mute);border-top:1px solid var(--line);padding-top:14px;line-height:1.6;}
+.foot a{color:var(--cyan);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🔭 What Am I Looking At?</h1>
+    <div class="loc">Hold your phone up toward a star or planet — it names the brightest thing in that direction. Science Centre Observatory, Jurong.</div>
+    <div class="bar">
+      <a href="scob-dashboard-v3.html">← Dashboard</a>
+      <a href="sky-finder.html">📱 Finder (reverse)</a>
+      <button id="enable">📡 Turn on compass</button>
+    </div>
+  </header>
+  <div class="status" id="status">On a phone, tap “Turn on compass” and allow motion &amp; orientation access, then aim the top of your phone at a bright point of light.</div>
+
+  <div class="hit" id="hit" style="display:none">
+    <div class="ic" id="hitIc" aria-hidden="true"></div>
+    <div>
+      <div class="lead">You're pointing at</div>
+      <div class="nm" id="hitNm">—</div>
+      <div class="sub" id="hitSub"></div>
+      <div class="sep" id="hitSep"></div>
+    </div>
+  </div>
+  <div class="blurb" id="hitBlurb"></div>
+  <div class="diag" id="diag"></div>
+
+  <h3>Also near where you're aiming</h3>
+  <div class="near" id="near"></div>
+
+  <div class="foot">
+    Positions computed on your device (P. Schlyter method) for the Science Centre Observatory. Only the Sun, Moon, planets, bright stars and showpiece objects are matched — faint stars aren't listed. Compass accuracy depends on your phone; wave it in a figure-8 to calibrate.<br><span class="scob-version" style="opacity:.75"></span>
+  </div>
+</div>
+<script src="astro-core.js"></script>
+<script>
+"use strict";
+var A=window.Astro, RAD=Math.PI/180;
+var heading=null, headingApprox=false, pitch=null, sensorOn=false;
+function angSep(a1,z1,a2,z2){var c=Math.sin(a1*RAD)*Math.sin(a2*RAD)+Math.cos(a1*RAD)*Math.cos(a2*RAD)*Math.cos((z1-z2)*RAD);return Math.acos(Math.max(-1,Math.min(1,c)))/RAD;}
+function candidates(){
+  var now=new Date(), s=A.sky(now), out=[];
+  // Sun & Moon
+  if(s.sunAlt>-1)out.push({sp:{name:'The Sun',kind:'star',blurb:'Our own star — never look at it through anything without a certified solar filter.'},alt:s.sunAlt,az:s.sunAz});
+  var mp=A.positionOf({kind:'moon',name:'The Moon'},now);if(mp.alt>0)out.push({sp:{name:'The Moon',kind:'moon',blurb:'Our nearest neighbour, 384,000 km away.'},alt:mp.alt,az:mp.az});
+  A.SHOWPIECES.concat(A.activeComets?A.activeComets(now):[]).forEach(function(sp){if(sp.kind==='moon')return;var p=A.positionOf(sp,now);
+    var minA=(sp.kind==='planet')?2:6;if(p.alt>minA)out.push({sp:sp,alt:p.alt,az:p.az,mag:p.mag});});
+  return {list:out,sunAlt:s.sunAlt};
+}
+function render(){
+  var st=document.getElementById('status');
+  if(heading==null){document.getElementById('hit').style.display='none';document.getElementById('diag').textContent='';document.getElementById('near').innerHTML='';return;}
+  var aimAz=heading, haveTilt=(pitch!=null&&!isNaN(pitch)), aimAlt=haveTilt?Math.max(0,Math.min(90,pitch)):null;
+  var c=candidates();
+  c.list.forEach(function(o){o.sep=haveTilt?angSep(aimAlt,aimAz,o.alt,o.az):Math.abs((((o.az-aimAz)%360)+540)%360-180);});
+  c.list.sort(function(a,b){return a.sep-b.sep;});
+  document.getElementById('diag').innerHTML='Phone facing <b>'+Math.round(aimAz)+'° '+A.compass(aimAz)+'</b>'+(haveTilt?', aimed <b>'+Math.round(aimAlt)+'°</b> up':' (tilt unavailable — matching by direction only)')+(headingApprox?' <span style="color:#ff9a9a">· uncalibrated, wave in a figure-8</span>':'');
+  if(!c.list.length){document.getElementById('hit').style.display='none';document.getElementById('near').innerHTML='<div class="sub2">Nothing bright is above the horizon right now.</div>';return;}
+  var best=c.list[0];
+  document.getElementById('hit').style.display='flex';
+  document.getElementById('hitIc').innerHTML=A.illus(best.sp,78);
+  document.getElementById('hitNm').textContent=best.sp.name;
+  document.getElementById('hitSub').textContent=Math.round(best.alt)+'° up in the '+A.compass(best.az)+(best.mag!=null?' · mag '+(best.mag>=0?'+':'')+best.mag.toFixed(1):'');
+  var far=best.sep>18;
+  document.getElementById('hitSep').innerHTML=far?('<span style="color:#ff9a9a">nearest bright object — about '+Math.round(best.sep)+'° from where you\'re aiming</span>'):('about '+Math.round(best.sep)+'° from your aim '+(best.sep<6?'✔':''));
+  document.getElementById('hitBlurb').textContent=best.sp.blurb||'';
+  document.getElementById('near').innerHTML=c.list.slice(1,4).map(function(o){return '<div class="row"><div class="ic2">'+A.illus(o.sp,38)+'</div><div><div class="nm2">'+o.sp.name+'</div><div class="sub2">'+Math.round(o.sep)+'° away · '+Math.round(o.alt)+'° up in the '+A.compass(o.az)+'</div></div></div>';}).join('');
+}
+// ---- proven compass/tilt handling (shared with sky-finder) ----
+function setHeading(h,approx){if(h==null||isNaN(h))return;
+  if(heading==null||headingApprox!==!!approx){heading=((h%360)+360)%360;}
+  else{var d=(((h-heading)%360)+540)%360-180;heading=((heading+d*0.35)%360+360)%360;}
+  headingApprox=!!approx;}
+function setPitch(b){if(b==null||isNaN(b))return;var v=Math.max(-30,Math.min(120,b));pitch=(pitch==null)?v:pitch+(v-pitch)*0.35;}
+var absSeen=false;
+function onAbsolute(e){if(e.alpha==null)return;absSeen=true;setPitch(e.beta);setHeading(360-e.alpha,false);}
+function onGeneric(e){
+  if(typeof e.webkitCompassHeading==='number'&&!isNaN(e.webkitCompassHeading)){setPitch(e.beta);setHeading(e.webkitCompassHeading,false);return;}
+  if(absSeen)return;
+  if(e.absolute===true&&e.alpha!=null){absSeen=true;setPitch(e.beta);setHeading(360-e.alpha,false);return;}
+  if(e.alpha!=null){setPitch(e.beta);setHeading(360-e.alpha,true);}
+}
+function addListeners(){window.addEventListener('deviceorientationabsolute',onAbsolute,true);window.addEventListener('deviceorientation',onGeneric,true);sensorOn=true;
+  document.getElementById('status').textContent='Compass on — aim the top edge of your phone straight at a star or planet, holding the phone upright.';}
+document.getElementById('enable').onclick=function(){var st=document.getElementById('status');
+  try{
+    if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
+      DeviceOrientationEvent.requestPermission().then(function(r){if(r==='granted')addListeners();else st.textContent='Compass permission was declined — this page needs it to know where you\'re pointing.';}).catch(function(){st.textContent='Couldn\'t start the compass on this device.';});
+    } else { addListeners(); if(!('DeviceOrientationEvent' in window)) st.textContent='This device has no orientation sensor, so it can\'t tell where you\'re pointing.'; }
+  }catch(err){st.textContent='Compass unavailable on this device.';}
+};
+setInterval(render,250);
+try{if(localStorage.getItem('scobNight')==='1'||(localStorage.getItem('scobNight')===null&&A.sunAltAt(new Date())<-1))document.body.style.background='#0a0402';}catch(e){}
+</script>
+<script src="version.js"></script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eyepiece &amp; Field of View — Woodlands Galaxy Night-Sky</title>
+<meta name="description" content="Pick a Woodlands Galaxy telescope and eyepiece to see the magnification, true field of view and exit pupil, with the target framed to scale so you can choose the right eyepiece.">
+<style>
+:root{color-scheme:dark;--navy:#0b1733;--navy2:#13224a;--navy3:#1a2b56;--gold:#f5c542;--cyan:#5bd6e0;--white:#f4f6fb;--mute:#9fb0d6;--line:#33406b;--green:#5fd38a;--red:#ff6b6b;}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--navy);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px 40px;}
+header{padding:18px 0 6px;}
+h1{font-size:22px;margin:0;color:var(--gold);}
+.loc{font-size:12.5px;color:var(--mute);margin-top:3px;}
+.backrow{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;}
+.backrow a{color:var(--cyan);font-weight:700;font-size:12.5px;border:1px solid var(--cyan);border-radius:9px;padding:7px 13px;text-decoration:none;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;}
+@media(max-width:720px){.grid{grid-template-columns:1fr;}}
+.card{background:var(--navy2);border:1px solid var(--line);border-radius:14px;padding:15px;}
+.card h2{margin:0 0 10px;font-size:15px;color:var(--cyan);}
+label{display:block;font-size:12px;color:var(--mute);margin:10px 0 3px;text-transform:uppercase;letter-spacing:.3px;}
+select,input{width:100%;background:#0e1a38;color:var(--white);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:14px;}
+.two{display:flex;gap:8px;}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
+.stat .b{background:var(--navy3);border:1px solid var(--line);border-radius:10px;padding:10px 12px;}
+.stat .k{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.3px;}
+.stat .v{font-size:20px;font-weight:800;color:var(--gold);line-height:1.2;}
+.stat .v small{font-size:12px;color:var(--mute);font-weight:600;}
+.warn{margin-top:10px;font-size:12.5px;border-radius:9px;padding:8px 10px;}
+.warn.ok{background:rgba(95,211,138,.12);color:#9be9b8;}
+.warn.bad{background:rgba(255,107,107,.14);color:#ffb4b4;}
+.fov{display:flex;flex-direction:column;align-items:center;}
+.fov svg{width:100%;max-width:320px;height:auto;}
+.cap{font-size:12.5px;color:var(--mute);text-align:center;margin-top:8px;}
+.foot{margin-top:26px;font-size:11.5px;color:var(--mute);border-top:1px solid var(--line);padding-top:14px;line-height:1.6;}
+.foot a{color:var(--cyan);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🔭 Eyepiece &amp; Field of View</h1>
+    <div class="loc">Pick a Woodlands Galaxy scope + eyepiece and see how a target frames up — magnification, true field &amp; exit pupil. Andromeda Observatory, Woodlands Galaxy CC.</div>
+    <div class="backrow">
+      <a href="Woodland_Galaxy.html">← Dashboard</a>
+      <a href="telescope-types.html">🔭 Telescope guide</a>
+      <a href="tonights-tour.html">🎟️ Tonight's Tour</a>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>1 · Telescope</h2>
+      <label>Woodlands Galaxy instrument (preset)</label>
+      <select id="scopePreset"></select>
+      <div class="two">
+        <div style="flex:1"><label>Aperture (mm)</label><input id="ap" type="number" value="406"></div>
+        <div style="flex:1"><label>Focal length (mm)</label><input id="fl" type="number" value="1500"></div>
+      </div>
+      <h2 style="margin-top:16px">2 · Eyepiece</h2>
+      <label>Eyepiece (preset)</label>
+      <select id="epPreset"></select>
+      <div class="two">
+        <div style="flex:1"><label>EP focal length (mm)</label><input id="epfl" type="number" value="25"></div>
+        <div style="flex:1"><label>Apparent FOV (°)</label><input id="epafov" type="number" value="52"></div>
+      </div>
+      <div class="stat" style="margin-top:14px">
+        <div class="b"><div class="k">Magnification</div><div class="v" id="mag">—</div></div>
+        <div class="b"><div class="k">True field of view</div><div class="v" id="tfov">—</div></div>
+        <div class="b"><div class="k">Exit pupil</div><div class="v" id="exit">—</div></div>
+        <div class="b"><div class="k">Focal ratio</div><div class="v" id="fr">—</div></div>
+      </div>
+      <div class="warn" id="warn"></div>
+    </div>
+
+    <div class="card fov">
+      <h2 style="align-self:flex-start">3 · Framing</h2>
+      <label style="align-self:flex-start;width:100%">Target to frame</label>
+      <select id="target" style="margin-bottom:12px"></select>
+      <svg id="fovsvg" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="cap" id="cap">—</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    Magnification = telescope focal length ÷ eyepiece focal length · true field = apparent field ÷ magnification · exit pupil = aperture ÷ magnification. Preset scope specs are typical values — adjust the boxes for your exact instrument. Target angular sizes are approximate.<br>
+    Companion pages: <a href="telescope-types.html">telescope guide &amp; magnification</a> · <a href="Woodland_Galaxy.html">dashboard</a> · <a href="tonights-tour.html">Tonight's Tour</a>.<br><span class="scob-version" style="opacity:.75"></span>
+  </div>
+</div>
+<script>
+"use strict";
+// Woodlands Galaxy fleet presets [aperture mm, focal length mm]
+var SCOPES=[
+  ['30 cm (12") reflector — Andromeda dome',300,1500],
+  ['Takahashi Sky 90 — rooftop (90 mm f/5.6)',90,500]
+];
+var EPS=[
+  ['40 mm Plössl (43°)',40,43],['32 mm Plössl (52°)',32,52],['25 mm Plössl (52°)',25,52],
+  ['15 mm wide (60°)',15,60],['10 mm wide (60°)',10,60],['9 mm (72°)',9,72],['6 mm (60°)',6,60]
+];
+// targets: name, angular size in arc-minutes (diameter); doubles carry sep in arcsec
+var TARGETS=[
+  ['Full Moon',31,null],['Sun (with filter!)',32,null],
+  ['Jupiter — disc',0.7,null],['Jupiter + 4 moons (span)',10,null],
+  ['Saturn + rings',0.75,null],['Mars — disc',0.3,null],
+  ['Orion Nebula (M42)',60,null],['Lagoon Nebula (M8)',60,null],
+  ['Pleiades (M45)',110,null],['Andromeda (M31)',180,null],
+  ['Omega Centauri',36,null],['Hercules Cluster (M13)',20,null],
+  ['Albireo (double)',null,35],['Double-Double (ε Lyr)',null,210]
+];
+function opt(sel,arr,i){sel.innerHTML=arr.map(function(a,j){return '<option value="'+j+'">'+a[0]+'</option>';}).join('');sel.value=i;}
+var $=function(id){return document.getElementById(id);};
+opt($('scopePreset'),SCOPES,0);opt($('epPreset'),EPS,2);opt($('target'),TARGETS,0);
+$('scopePreset').onchange=function(){var s=SCOPES[+this.value];$('ap').value=s[1];$('fl').value=s[2];calc();};
+$('epPreset').onchange=function(){var e=EPS[+this.value];$('epfl').value=e[1];$('epafov').value=e[2];calc();};
+['ap','fl','epfl','epafov','target'].forEach(function(id){$(id).addEventListener('input',calc);$(id).addEventListener('change',calc);});
+function calc(){
+  var ap=+$('ap').value,fl=+$('fl').value,epfl=+$('epfl').value,afov=+$('epafov').value;
+  if(!ap||!fl||!epfl||!afov){return;}
+  var mag=fl/epfl, tfov=afov/mag, exit=ap/mag, fr=fl/ap;
+  $('mag').innerHTML=Math.round(mag)+'<small>×</small>';
+  var tfovMin=tfov*60;
+  $('tfov').innerHTML=(tfov>=1?tfov.toFixed(2)+'<small>°</small>':Math.round(tfovMin)+'<small>′</small>');
+  $('exit').innerHTML=exit.toFixed(1)+'<small> mm</small>';
+  $('fr').innerHTML='f/'+fr.toFixed(1);
+  var maxUseful=2*ap; var w=$('warn');
+  if(mag>maxUseful){w.className='warn bad';w.innerHTML='⚠️ Over the useful limit (~'+Math.round(maxUseful)+'× for this aperture) — the image will be dim &amp; fuzzy. Use a longer eyepiece.';}
+  else if(exit>7){w.className='warn bad';w.innerHTML='⚠️ Exit pupil '+exit.toFixed(1)+' mm is wider than a dark-adapted eye (~7 mm) — light is wasted, and on a Cassegrain/SCT the central shadow may appear. Use a shorter eyepiece.';}
+  else{w.className='warn ok';w.innerHTML='✔ A comfortable, usable combination (exit pupil '+exit.toFixed(1)+' mm).';}
+  drawFOV(tfovMin);
+}
+function drawFOV(tfovMin){
+  var t=TARGETS[+$('target').value];var name=t[0],sizeMin=t[1],sepArcsec=t[2];
+  var R=118, cx=150, cy=138;                 // field circle (kept clear of edges & labels)
+  var s='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="#08101f" stroke="#5bd6e0" stroke-width="2"/>';
+  s+='<line x1="'+cx+'" y1="'+(cy-R)+'" x2="'+cx+'" y2="'+(cy+R)+'" stroke="#1a2b56" stroke-width="1"/>';
+  s+='<line x1="'+(cx-R)+'" y1="'+cy+'" x2="'+(cx+R)+'" y2="'+cy+'" stroke="#1a2b56" stroke-width="1"/>';
+  var fit=true, capExtra='';
+  if(sepArcsec!=null){                        // double star: two dots at true separation
+    var sepMin=sepArcsec/60; var px=2*R*(sepMin/tfovMin); // diameter scale
+    fit = sepMin < tfovMin*0.9; px=Math.min(px,2*R*0.9);
+    s+='<circle cx="'+(cx-px/2).toFixed(1)+'" cy="'+cy+'" r="4" fill="#f5c542"/><circle cx="'+(cx+px/2).toFixed(1)+'" cy="'+cy+'" r="3.4" fill="#bcd4ff"/>';
+    capExtra=' · separation '+sepArcsec+'″';
+  } else {
+    var trueR=R*(sizeMin/tfovMin);            // to-scale radius (full field diameter = tfovMin)
+    fit = sizeMin <= tfovMin;
+    var drawR=Math.min(trueR,R);              // never spill outside the field circle
+    var col=/Moon|Sun/.test(name)?'#d9def0':(/Jupiter|Saturn|Mars/.test(name)?'#f0d9a8':'#9fd7ff');
+    var faint=/Nebula|Pleiades|Andromeda|Centauri|Cluster/.test(name);
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+drawR.toFixed(1)+'" fill="'+col+'" fill-opacity="'+(faint?0.32:0.85)+'" stroke="'+col+'" stroke-width="'+(fit?1:2)+'"'+(fit?'':' stroke-dasharray="4 3"')+'/>';
+    capExtra=' · '+(sizeMin>=60?(sizeMin/60).toFixed(1)+'° across':sizeMin+'′ across')+(fit?'':' — '+(sizeMin/tfovMin).toFixed(1)+'× the field');
+  }
+  s+='<text x="'+cx+'" y="'+(cy+R+20)+'" text-anchor="middle" fill="#9fb0d6" font-size="11">field of view '+(tfovMin>=60?(tfovMin/60).toFixed(2)+'°':Math.round(tfovMin)+'′')+'</text>';
+  $('fovsvg').innerHTML=s;
+  $('cap').innerHTML='<b style="color:'+(fit?'#9be9b8':'#ffb4b4')+'">'+name+'</b>'+capExtra+' — '+(fit?'fits in the field ✔':'bigger than the field — use a lower-power (longer) eyepiece');
+}
+calc();
+</script>
+<script src="version.js"></script>
+</body>
+</html>

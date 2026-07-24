@@ -1,0 +1,16 @@
+{
+  "name": "Woodlands Galaxy Night-Sky",
+  "short_name": "Woodlands Galaxy",
+  "description": "Live night-sky planner for the Friday Andromeda Observatory session, Singapore — Moon phase, target list (Visual) and weather for any date.",
+  "start_url": "Woodland_Galaxy.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1733",
+  "theme_color": "#0b1733",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
